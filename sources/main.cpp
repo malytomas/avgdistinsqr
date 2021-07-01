@@ -23,7 +23,7 @@ void thrEntry(uint32, uint32)
 	real ys2[batch];
 	real dst2[batch];
 	double sum = 0;
-	uint64 count = 0;
+	uint64 batches = 0;
 	while (timer->duration() < 1000000) // one second
 	{
 		for (real &it : xs1)
@@ -36,15 +36,17 @@ void thrEntry(uint32, uint32)
 			it = gen.randomChance();
 		for (uint32 i = 0; i < batch; i++)
 			dst2[i] = sqr(xs1[i] - xs2[i]) + sqr(ys1[i] - ys2[i]);
+		real s = 0;
 		for (const real it : dst2)
-			sum += sqrt(it).value;
-		count += batch;
+			s += sqrt(it).value;
+		sum += (s / batch).value;
+		batches++;
 	}
 	{
 		ScopeLock lock(mutex);
-		globalSum += sum / count;
+		globalSum += sum / batches;
 		globalCount += 1;
-		globalMeasurements += count;
+		globalMeasurements += batches * batch;
 	}
 }
 
