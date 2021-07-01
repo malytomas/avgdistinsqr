@@ -7,6 +7,7 @@
 
 using namespace cage;
 
+Holder<Timer> timer = newTimer();
 Holder<Mutex> mutex = newMutex();
 double globalSum = 0;
 uint64 globalCount = 0;
@@ -14,28 +15,21 @@ uint64 globalMeasurements = 0;
 
 void thrEntry(uint32, uint32)
 {
-	Holder<Timer> timer = newTimer();
 	RandomGenerator gen;
 	constexpr uint32 batch = 512;
-	real xs1[batch];
-	real ys1[batch];
-	real xs2[batch];
-	real ys2[batch];
+	real xs[batch];
+	real ys[batch];
 	real dst2[batch];
 	double sum = 0;
 	uint64 batches = 0;
 	while (timer->duration() < 1000000) // one second
 	{
-		for (real &it : xs1)
-			it = gen.randomChance(); // random value in range 0 .. 1
-		for (real &it : ys1)
-			it = gen.randomChance();
-		for (real &it : xs2)
-			it = gen.randomChance();
-		for (real &it : ys2)
-			it = gen.randomChance();
+		for (real &it : xs)
+			it = gen.randomChance() - gen.randomChance(); // difference of random values in range 0 .. 1
+		for (real &it : ys)
+			it = gen.randomChance() - gen.randomChance();
 		for (uint32 i = 0; i < batch; i++)
-			dst2[i] = sqr(xs1[i] - xs2[i]) + sqr(ys1[i] - ys2[i]);
+			dst2[i] = sqr(xs[i]) + sqr(ys[i]);
 		real s = 0;
 		for (const real it : dst2)
 			s += sqrt(it).value;
@@ -60,6 +54,7 @@ int main(int argc, const char *args[])
 	{
 		Holder<ThreadPool> thrs = newThreadPool();
 		thrs->function.bind<&thrEntry>();
+		timer->reset();
 		thrs->run();
 
 		const double result = globalSum / globalCount;
